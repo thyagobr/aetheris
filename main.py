@@ -14,7 +14,7 @@ clock = pygame.time.Clock()
 root_dir = os.path.dirname(__file__)
 level_1 = os.path.join(root_dir, 'level_1.bmp')
 try:
-    level_surface = pygame.image.load(level_1).convert()
+    level_surface = pygame.image.load(level_1)
 except pygame.error, message:
     print 'Erro'
     raise SystemExit, message
@@ -44,5 +44,5 @@ while True:
 
     screen.blit(level_surface, (0,0), (level_x, level_y, 640, 480))
     pygame.draw.circle(screen, (0 ,32, 240), (20, 200), radius, radius/9)
-    pygame.display.flip()
+    pygame.display.update()
     clock.tick(30)
