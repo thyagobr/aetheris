@@ -22,7 +22,7 @@ level_x = 0
 level_y = 0
 radius = 0
 
-while 1:
+while True:
     if radius > 20:
         radius = 0
     else:
@@ -33,9 +33,9 @@ while 1:
             pygame.quit()
             sys.exit()
         elif event.type == KEYDOWN:
-            if pygame.key.get_pressed()[K_RIGHT]:
+            if pygame.key.get_pressed()[K_RIGHT] and (level_x + 20) <= 1220:
                 level_x += 20
-            elif pygame.key.get_pressed()[K_LEFT]:
+            elif pygame.key.get_pressed()[K_LEFT] and (level_x - 20) >= 0:
                 level_x -= 20
             elif pygame.key.get_pressed()[K_UP]:
                 level_y -= 20
@@ -43,7 +43,6 @@ while 1:
                 level_y += 20
 
     screen.blit(level_surface, (0,0), (level_x, level_y, 640, 480))
-    # pygame.draw.rect(screen, (0, 255, 0), (100, 50, 20, 20))
-    pygame.draw.circle(screen, (0 ,32, 240), (20, 200), radius, 0)
+    pygame.draw.circle(screen, (0 ,32, 240), (20, 200), radius, radius/9)
     pygame.display.flip()
-    clock.tick(60)
+    clock.tick(30)
