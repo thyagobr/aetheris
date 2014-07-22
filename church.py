@@ -13,7 +13,6 @@ clock = pygame.time.Clock()
 
 root_dir = os.path.dirname(__file__)
 floor_tile = os.path.join(root_dir, 'wooden_floor32.png')
-# church_bench = os.path.join(root_dir, 'church_bench.png')
 try:
     player = pygame.image.load('crisiscorepeeps.png')
     level_surface = pygame.image.load(floor_tile)
@@ -28,6 +27,7 @@ player_y = 450
 movement = [0, 0]
 radius = 0
 
+# 20x15
 level = [
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -66,7 +66,6 @@ while True:
             if pygame.key.get_pressed()[K_DOWN]:
                 movement[1] = 3
         elif event.type == KEYUP:
-            print event.key
             if event.key == 275:
                 movement[0] = 0
             if event.key == 276:
@@ -91,7 +90,10 @@ while True:
 
 
     player_pos = player_x + movement[0], player_y + movement[1]
-    player_x, player_y = player_pos
+    print "Current Tile: ", player_pos[0] / 32, player_pos[1] / 32
+    # problem: it has to be rectangles; its only calculating top-left point
+    if (level[player_pos[1] / 32][player_pos[0] /32]) == 1:
+        player_x, player_y = player_pos
     screen.blit(player, player_pos, (0, 0, 32, 32))
 
 
