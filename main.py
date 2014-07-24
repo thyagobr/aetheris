@@ -28,9 +28,17 @@ class Main():
         # Example: how to set up a directory based on root dir
         floor_tile = os.path.join(root_dir, 'wooden_floor32.png')
 
+        # Loading player (single-player mode)
+        self.player = Entity("Varol", (320, 450), 'crisiscorepeeps.png', ((32 *
+            1), 0, 32, 32))
+
+        # Adds NPCs to the map
+        self.npcs = []
+        self.npcs.append(Entity("City Guard", (40, 200), 'crisiscorepeeps.png', ((32 * 7), 0,
+            32, 32)))
+
         # Loading images
         try:
-            player = pygame.image.load('crisiscorepeeps.png')
             self.level_surface = pygame.image.load(floor_tile)
             church_bench = pygame.image.load('church_bench.png')
             church_bench_diagonal = pygame.image.load('church_bench_diagonal_mid.png')
@@ -38,8 +46,6 @@ class Main():
         except pygame.error, message:
             print 'Erro'
             raise SystemExit, message
-
-        print "Level Tile: ", self.level_surface
 
         # Setting up player's initial position
         player_x, player_y = 320, 450
@@ -66,6 +72,7 @@ class Main():
                 ]
 
         while True:
+            collision = False
         
             for event in pygame.event.get():
                 if event.type == QUIT:
@@ -103,17 +110,41 @@ class Main():
                         self.screen.blit(self.level_surface, ((32 * x), (32 * y)), (0, 0, 640, 480))
                         self.screen.blit(church_bench_diag_leftop, ((32 * x), (32 * y)), (0, 0, 640, 480))
         
-        
-            player_pos = player_x + movement[0], player_y + movement[1]
-            # print "Current Tile: ", player_pos[0] / 32, player_pos[1] / 32
-            # problem: it has to be rectangles; its only calculating top-left point
-            if (self.level[player_pos[1] / 32][player_pos[0] /32]) == 1:
-                player_x, player_y = player_pos
-            self.screen.blit(player, player_pos, (0, 0, 32, 32))
+            player_pos = self.player.position[0] + movement[0], self.player.position[1] + movement[1]
 
+            for npc in self.npcs:
+                self.screen.blit(npc.sprite, npc.position,
+                        npc.sprite_coords)
+                if self.check_collision(self.player, npc, movement):
+                    collision = True
+
+
+            if collision == False:
+                self.player.position = player_pos
+            else:
+                player_pos = self.player.position
+            self.screen.blit(self.player.sprite, self.player.position, (0, 0, 32, 32))
 
             pygame.display.update()
             self.clock.tick(self.FPS)
+
+    def check_collision(self, player, entity, movement):
+        player_rect = player.get_rect()
+        entity_rect = entity.get_rect()
+        player_rect[0] += movement[0]
+        player_rect[1] += movement[1]
+        return player_rect.colliderect(entity_rect)
+
+class Entity():
+    def __init__(self, name, position, sprite, *sprite_coords):
+        self.name = name
+        self.position = position
+        self.sprite = pygame.image.load(sprite)
+        self.sprite_coords = pygame.Rect(sprite_coords)
+
+    def get_rect(self):
+        return pygame.Rect(self.position[0], self.position[1],
+            self.sprite_coords[2], self.sprite_coords[3])
 
 if __name__ == '__main__':
     Main()
