@@ -41,7 +41,12 @@ class Screen < Gosu::Window
     end
 
     if @spell_x and @spell_y
-      puts Gosu::distance(@player.x, @player.y, @spell_x, @spell_y)
+      collide = Gosu::distance(@player.pos_x, @player.pos_y, @spell_x, @spell_y)
+      if (collide <= 48) then
+        puts "[#{Time.now} collision!"
+      else
+        puts "[#{Time.now}] #{collide}"
+      end
     end
   end
 
@@ -91,6 +96,9 @@ class Player
   def warp(x, y)
     @x, @y = x, y
   end
+
+  def pos_x; @x + (32 / 2); end
+  def pos_y; @y + (32 / 2); end
 
   def up; move(0); end
   def down; move(1); end
