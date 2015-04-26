@@ -1,5 +1,6 @@
 require 'rubygems'
 require 'gosu'
+require 'pry'
 
 class Screen < Gosu::Window
 
@@ -11,6 +12,7 @@ class Screen < Gosu::Window
     @level = Array.new((@width / 32) * (@height / 32), [0, 1]).flatten
     @floor1 = Gosu::Image.new(self, "castlefloors.png", true, 0, 0, 32, 32)
     @floor2 = Gosu::Image.new(self, "castlefloors.png", true, 32 * 4, 0, 32, 32)
+    @spell = Gosu::Image.new(self, "castlefloors.png", true, 32 * 6, 32, 32 * 3, 32 * 3)
     @game_name = Gosu::Image.from_text(self, "Aetheris", Gosu.default_font_name, 100)
     @player = Player.new(self)
     @player.warp(300, 200)
@@ -33,6 +35,14 @@ class Screen < Gosu::Window
     if button_down? Gosu::KbDown or button_down? Gosu::GpButton1 then
       @player.down
     end
+    if button_down? Gosu::MsLeft then
+      @spell_x = mouse_x 
+      @spell_y = mouse_y
+    end
+
+    if @spell_x and @spell_y
+      puts Gosu::distance(@player.x, @player.y, @spell_x, @spell_y)
+    end
   end
 
   def draw
@@ -50,10 +60,25 @@ class Screen < Gosu::Window
     end
 
     @player.draw
+
+    if @spell_x and @spell_y then
+      @mod = Gosu::milliseconds unless @mod
+      fade_out = ((Gosu::milliseconds - @mod) / 5) % 0xFF
+      if fade_out >= 252
+        @spell_x, @spell_y, @mod = nil
+      else
+        alpha = 0xFF - fade_out
+        @spell.draw(@spell_x - (@spell.width / 2), @spell_y - (@spell.height / 2), 1, 1, 1, Gosu::Color.new(alpha, 255, 255, 255))
+      end
+    end
   end
+
+  def needs_cursor?; true; end
 end
 
 class Player
+  attr_reader :x, :y
+
   def initialize(window)
     @poses = Gosu::Image.load_tiles(window, "crisiscorepeeps.png", 32, 32, true)
     @x = @y = 0
