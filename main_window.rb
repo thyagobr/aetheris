@@ -41,12 +41,21 @@ class Screen < Gosu::Window
     end
 
     if @spell_x and @spell_y
-      collide = Gosu::distance(@player.pos_x, @player.pos_y, @spell_x, @spell_y)
-      if (collide <= 48) then
-        puts "[#{Time.now} collision!"
-      else
-        puts "[#{Time.now}] #{collide}"
-      end
+      box1 = Box.new(@player.x, @player.y, @player.pos_x, @player.pos_y)
+      # @spell_x and @spell_y aren't the left/top of the box
+      # we capture the click and render these variables *as the center point*
+      # so, we have to calculate the left/top
+      box2 = Box.new((@spell_x - (@spell.width / 2)), (@spell_y - (@spell.width / 2)), (@spell_x + (@spell.width / 2)), (@spell_y + (@spell.height / 2)))
+      collided = box1.collided_with(box2)
+      puts "player left: #{box1.left}, top: #{box1.top}, right: #{box1.right}, bottom #{box1.bottom}"
+      puts "spell left: #{box2.left}, top: #{box2.top}, right: #{box2.right}, bottom #{box2.bottom}"
+      puts "#{Gosu::milliseconds} COLLIDED!" if collided
+      #collide = Gosu::distance(@player.pos_x, @player.pos_y, @spell_x, @spell_y)
+      #if (collide <= 48) then
+      #  puts "[#{Time.now} collision!"
+      #else
+      #  puts "[#{Time.now}] #{collide}"
+      #end
     end
   end
 
@@ -60,6 +69,8 @@ class Screen < Gosu::Window
           @floor1.draw(32 * w, 32 * h, 0)
         when 1
           @floor2.draw(32 * w, 32 * h, 0)
+        when 2
+          @floor2.draw(32 * w, 32 * h, 0, 1, 1, 0xFFFF0000)
         end
       end
     end
@@ -97,8 +108,8 @@ class Player
     @x, @y = x, y
   end
 
-  def pos_x; @x + (32 / 2); end
-  def pos_y; @y + (32 / 2); end
+  def pos_x; @x + 32; end
+  def pos_y; @y + 32; end
 
   def up; move(0); end
   def down; move(1); end
@@ -126,6 +137,25 @@ class Player
   def draw
     @poses[@pos + @anim].draw(@x, @y, 1)
   end
+end
+
+class Box
+  attr_accessor :top, :left, :bottom, :right
+
+  def initialize(left,top, right, bottom)
+    self.left = left
+    self.top = top
+    self.right = right
+    self.bottom = bottom
+  end
+
+  def collided_with(other_box)
+   !(self.right <= other_box.left or
+     self.left >= other_box.right or
+     self.bottom <= other_box.top or
+     self.top >= other_box.bottom)   # kkkkkkkkkkkkkkkk
+  end
+
 end
 
 Screen.new.show
