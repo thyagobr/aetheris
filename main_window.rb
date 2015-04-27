@@ -12,7 +12,8 @@ class Screen < Gosu::Window
     @level = Array.new((@width / 32) * (@height / 32), [0, 1]).flatten
     @floor1 = Gosu::Image.new(self, "castlefloors.png", true, 0, 0, 32, 32)
     @floor2 = Gosu::Image.new(self, "castlefloors.png", true, 32 * 4, 0, 32, 32)
-    @spell = Gosu::Image.new(self, "castlefloors.png", true, 32 * 6, 32, 32 * 3, 32 * 3)
+    @spell = Gosu::Image.new(self, "explosion.png", true, 0, 0, 32 * 3, 32 * 3)
+    @spell_cooldown = 0
     @game_name = Gosu::Image.from_text(self, "Aetheris", Gosu.default_font_name, 100)
     @player = Player.new(self)
     @player.warp(300, 200)
@@ -36,9 +37,15 @@ class Screen < Gosu::Window
       @player.down
     end
     if button_down? Gosu::MsLeft then
-      @spell_x = mouse_x 
-      @spell_y = mouse_y
+      puts "it is such a disgrace!"
+      if @spell_cooldown == 0
+        puts "couldn't watch your back today"
+        @spell_cooldown = Gosu::milliseconds
+        @spell_x = mouse_x 
+        @spell_y = mouse_y
+      end
     end
+    @spell_cooldown = 0 if (Gosu::milliseconds - @spell_cooldown) >= 3000
 
     if @spell_x and @spell_y
       box1 = Box.new(@player.x, @player.y, @player.pos_x, @player.pos_y)
@@ -150,7 +157,7 @@ class Box
   end
 
   def collided_with(other_box)
-   !(self.right <= other_box.left or
+   return !(self.right <= other_box.left or
      self.left >= other_box.right or
      self.bottom <= other_box.top or
      self.top >= other_box.bottom)   # kkkkkkkkkkkkkkkk
