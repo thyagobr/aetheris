@@ -10,8 +10,10 @@ class Screen < Gosu::Window
     super(@width, @height, fullscreen = false)
     self.caption = "Aetheris"
     @level = Array.new((@width / 32) * (@height / 32), [0, 1]).flatten
+    @level[Random.rand(@level.size)] = 7
     @floor1 = Gosu::Image.new(self, "castlefloors.png", true, 0, 0, 32, 32)
     @floor2 = Gosu::Image.new(self, "castlefloors.png", true, 32 * 4, 0, 32, 32)
+    @floor3 = Gosu::Image.new(self, "church_bench.png", true, 0, 0, 32, 32)
     @spell = Gosu::Image.new(self, "explosion.png", true, 0, 0, 32 * 3, 32 * 3)
     @spell_cooldown = 0
     @game_name = Gosu::Image.from_text(self, "Aetheris", Gosu.default_font_name, 100)
@@ -75,6 +77,8 @@ class Screen < Gosu::Window
         # this is just a test for how to draw telegraph-like things
         when 2
           @floor2.draw(32 * w, 32 * h, 0, 1, 1, 0xFFFF0000)
+        when 7
+          @floor3.draw(32 * w, 32 * h, 0) if in_player_view(@player, w, h)
         end
       end
     end
