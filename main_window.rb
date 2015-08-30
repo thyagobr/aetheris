@@ -17,6 +17,7 @@ class Screen < Gosu::Window
     @game_name = Gosu::Image.from_text(self, "Aetheris", Gosu.default_font_name, 100)
     @player = Player.new(self)
     @player.warp(300, 200)
+    @visibility = { fog: 3 }
   end
 
   def button_down(id)
@@ -37,6 +38,7 @@ class Screen < Gosu::Window
       @player.down
     end
     if button_down? Gosu::MsLeft then
+      puts "Player x,y: #{@player.x},#{@player.y}"
       if @spell_cooldown == 0
         @spell_cooldown = Gosu::milliseconds
         @spell_x = mouse_x 
@@ -52,6 +54,14 @@ class Screen < Gosu::Window
     end
   end
 
+  def in_player_view(player, w, h)
+    terrain_visibility = @visibility[:fog] * 32
+    (player.x - terrain_visibility) <= (32 * w) and
+      (player.x + terrain_visibility) >= (32 * w) and
+      (player.y - terrain_visibility) <= (32 * h) and
+      (player.y + terrain_visibility) >= (32 * h)
+  end
+
   def draw
     pitch = @width / 32
 
@@ -59,9 +69,9 @@ class Screen < Gosu::Window
       (@width / 32).times do |w|
         case @level[w + h * pitch]
         when 0
-          @floor1.draw(32 * w, 32 * h, 0)
+          @floor1.draw(32 * w, 32 * h, 0) if in_player_view(@player, w, h)
         when 1
-          @floor2.draw(32 * w, 32 * h, 0)
+          @floor2.draw(32 * w, 32 * h, 0) if in_player_view(@player, w, h)
         # this is just a test for how to draw telegraph-like things
         when 2
           @floor2.draw(32 * w, 32 * h, 0, 1, 1, 0xFFFF0000)
