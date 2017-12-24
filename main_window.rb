@@ -1,44 +1,80 @@
 require 'rubygems'
 require 'gosu'
 require 'pry'
+require 'byebug'
+require './camera'
+
+class Utils
+  def self.image_path_for(file_name)
+    File.join(Dir.pwd, "images/#{file_name}.png")
+  end
+end
 
 class Screen < Gosu::Window
+  WIDTH = 800
+  HEIGHT = 640
+  TILE_SIZE = 32
 
   def initialize
     @width = 800
+    @width_tiles = @width / 32
     @height = 640
+    @height_tiles = @height / 32
     super(@width, @height, fullscreen = false)
     self.caption = "Aetheris"
+    @level_top = Array.new((@width / 32) * (@height / 32), 2).flatten
     @level = Array.new((@width / 32) * (@height / 32), [0, 1]).flatten
-    @level[Random.rand(@level.size)] = 7
-    @floor1 = Gosu::Image.new(self, "castlefloors.png", true, 0, 0, 32, 32)
-    @floor2 = Gosu::Image.new(self, "castlefloors.png", true, 32 * 4, 0, 32, 32)
-    @floor3 = Gosu::Image.new(self, "church_bench.png", true, 0, 0, 32, 32)
-    @spell = Gosu::Image.new(self, "explosion.png", true, 0, 0, 32 * 3, 32 * 3)
+    @level = [@level_top, @level].flatten
+
+    @new_level = Array.new(@height_tiles, Array.new(@width_tiles + 1, 0))
+    @new_level << Array.new(@width_tiles + 1, 2)
+
+    @floor1 = Gosu::Image.new(self, Utils.image_path_for("castlefloors"), true, 0, 0, 32, 32)
+    @floor2 = Gosu::Image.new(self, Utils.image_path_for("castlefloors"), true, 32 * 4, 0, 32, 32)
+    @floor4 = Gosu::Image.new(self, Utils.image_path_for("castlefloors"), true, 32 * 9, 0, 32 * 4, 32)
+    @spell = Gosu::Image.new(self, Utils.image_path_for("explosion"), true, 0, 0, 32 * 3, 32 * 3)
     @spell_cooldown = 0
     @game_name = Gosu::Image.from_text(self, "Aetheris", Gosu.default_font_name, 100)
     @player = Player.new(self)
     @player.warp(300, 200)
     @visibility = { fog: 3 }
+    @camera = Camera.new(x: 0, y: 0, width: @new_level[0].count, height: @new_level.count)
   end
 
   def button_down(id)
     close if id == Gosu::KbEscape
+    @byebug = !@byebug if id == Gosu::KbP
   end
 
   def update
     if button_down? Gosu::KbLeft or button_down? Gosu::GpLeft then
-      @player.left
+      @camera.move_left
+      @player.left if @player.x >= 0 && @camera.is_touching_edge?(:left)
     end
+
     if button_down? Gosu::KbRight or button_down? Gosu::GpRight then
-      @player.right
+      mid_of_screen = (Screen::WIDTH + @camera.x.abs) / 2
+      if @player.x < mid_of_screen
+        @player.right 
+      else
+        @camera.move_right
+      end
     end
+
     if button_down? Gosu::KbUp or button_down? Gosu::GpButton0 then
-      @player.up
+      @camera.move_up
+      @player.up if @player.y >= 0 && @camera.is_touching_edge?(:top)
     end
+
     if button_down? Gosu::KbDown or button_down? Gosu::GpButton1 then
-      @player.down
+      mid_of_screen = (Screen::HEIGHT + @camera.y.abs) / 2
+      if @player.y < mid_of_screen
+        @player.down
+      else
+        @camera.move_down
+      end
     end
+
     if button_down? Gosu::MsLeft then
       puts "Player x,y: #{@player.x},#{@player.y}"
       if @spell_cooldown == 0
@@ -56,32 +92,33 @@ class Screen < Gosu::Window
     end
   end
 
-  def in_player_view(player, w, h)
-    terrain_visibility = @visibility[:fog] * 32
-    (player.x - terrain_visibility) <= (32 * w) and
-      (player.x + terrain_visibility) >= (32 * w) and
-      (player.y - terrain_visibility) <= (32 * h) and
-      (player.y + terrain_visibility) >= (32 * h)
-  end
-
   def draw
-    pitch = @width / 32
-
-    (@height / 32).times do |h|
-      (@width / 32).times do |w|
-        case @level[w + h * pitch]
-        when 0
-          @floor1.draw(32 * w, 32 * h, 0) if in_player_view(@player, w, h)
-        when 1
-          @floor2.draw(32 * w, 32 * h, 0) if in_player_view(@player, w, h)
-        # this is just a test for how to draw telegraph-like things
-        when 2
-          @floor2.draw(32 * w, 32 * h, 0, 1, 1, 0xFFFF0000)
-        when 7
-          @floor3.draw(32 * w, 32 * h, 0) if in_player_view(@player, w, h)
+    translate(@camera.x, @camera.y) do
+      @new_level.each.with_index do |row, h|
+        row.each.with_index do |tile, w|
+          case tile
+          when 0
+            @floor1.draw(32 * w, 32 * h, 0)
+          when 2
+            @floor4.draw(32 * w, 32 * h, 0)
+          end
         end
       end
     end
+
+    #(@height / 32).times do |h|
+    #  (@width / 32).times do |w|
+    #    case @level[w + h * offset]
+    #    when 0
+    #      @floor1.draw(32 * w, 32 * h, 0)
+    #    when 1
+    #      @floor2.draw(32 * w, 32 * h, 0)
+    #    when 2
+    #      #@floor2.draw(32 * w, 32 * h, 0, 1, 1, 0xFFFF0000)
+    #      @floor4.draw(32 * w, 32 * h, 0)
+    #    end
+    #  end
+    #end
 
     @player.draw
 
@@ -104,7 +141,7 @@ class Player
   attr_reader :x, :y
 
   def initialize(window)
-    @poses = Gosu::Image.load_tiles(window, "crisiscorepeeps.png", 32, 32, true)
+    @poses = Gosu::Image.load_tiles(window, Utils.image_path_for("crisiscorepeeps"), 32, 32, true)
     @x = @y = 0
     @vel = 3
     @pos = 0
@@ -158,12 +195,11 @@ class Box
   end
 
   def collided_with(other_box)
-   return !(self.right <= other_box.left or
-     self.left >= other_box.right or
-     self.bottom <= other_box.top or
-     self.top >= other_box.bottom)
+    return !(self.right <= other_box.left or
+             self.left >= other_box.right or
+             self.bottom <= other_box.top or
+             self.top >= other_box.bottom)
   end
-
 end
 
 Screen.new.show
