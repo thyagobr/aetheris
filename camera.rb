@@ -34,6 +34,12 @@ class Camera
       return @y == 0
     when :left
       return @x == 0
+    when :bottom
+      # this reducing is because the numbers aren't matching exactly: they differ by a fex pixels
+      return (@total_level_height * Screen::TILE_SIZE) - (Screen::HEIGHT + @y.abs) <= 2
+    when :right
+      # this reducing is because the numbers aren't matching exactly: they differ by a fex pixels
+      return (@total_level_width * Screen::TILE_SIZE) - (Screen::WIDTH + @x.abs) <= 2
     end
   end
 end

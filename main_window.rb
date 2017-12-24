@@ -3,12 +3,8 @@ require 'gosu'
 require 'pry'
 require 'byebug'
 require './camera'
-
-class Utils
-  def self.image_path_for(file_name)
-    File.join(Dir.pwd, "images/#{file_name}.png")
-  end
-end
+require './utils'
+require './collision_box'
 
 class Screen < Gosu::Window
   WIDTH = 800
@@ -54,8 +50,8 @@ class Screen < Gosu::Window
 
     if button_down? Gosu::KbRight or button_down? Gosu::GpRight then
       mid_of_screen = (Screen::WIDTH + @camera.x.abs) / 2
-      if @player.x < mid_of_screen
-        @player.right 
+      if @player.x < mid_of_screen || @camera.is_touching_edge?(:right)
+        @player.right if @player.x <= @width - 32
       else
         @camera.move_right
       end
@@ -68,8 +64,8 @@ class Screen < Gosu::Window
 
     if button_down? Gosu::KbDown or button_down? Gosu::GpButton1 then
       mid_of_screen = (Screen::HEIGHT + @camera.y.abs) / 2
-      if @player.y < mid_of_screen
-        @player.down
+      if @player.y < mid_of_screen || @camera.is_touching_edge?(:bottom)
+        @player.down if @player.y <= @height - 32
       else
         @camera.move_down
       end
@@ -86,8 +82,8 @@ class Screen < Gosu::Window
     @spell_cooldown = 0 if (Gosu::milliseconds - @spell_cooldown) >= 3000
 
     if @spell_x and @spell_y
-      box1 = Box.new(@player.x, @player.y, @player.pos_x, @player.pos_y)
-      box2 = Box.new((@spell_x - (@spell.width / 2)), (@spell_y - (@spell.width / 2)), (@spell_x + (@spell.width / 2)), (@spell_y + (@spell.height / 2)))
+      box1 = CollisionBox.new(@player.x, @player.y, @player.pos_x, @player.pos_y)
+      box2 = CollisionBox.new((@spell_x - (@spell.width / 2)), (@spell_y - (@spell.width / 2)), (@spell_x + (@spell.width / 2)), (@spell_y + (@spell.height / 2)))
       collided = box1.collided_with(box2)
     end
   end
@@ -181,24 +177,6 @@ class Player
 
   def draw
     @poses[@pos + @anim].draw(@x, @y, 1)
-  end
-end
-
-class Box
-  attr_accessor :top, :left, :bottom, :right
-
-  def initialize(left,top, right, bottom)
-    self.left = left
-    self.top = top
-    self.right = right
-    self.bottom = bottom
-  end
-
-  def collided_with(other_box)
-    return !(self.right <= other_box.left or
-             self.left >= other_box.right or
-             self.bottom <= other_box.top or
-             self.top >= other_box.bottom)
   end
 end
 
