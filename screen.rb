@@ -4,6 +4,7 @@ class Screen < Gosu::Window
   MAP_WIDTH = 1008 * 2
   MAP_HEIGHT = 689 * 2
   TILE_SIZE = 32
+  PROPS = [CollisionBox.new(0, 0, 55, 140)]
 
   def initialize
     @width = 800
@@ -32,6 +33,39 @@ class Screen < Gosu::Window
   end
 
   def update
+    handle_input
+
+    @spell_cooldown = 0 if (Gosu::milliseconds - @spell_cooldown) >= 3000
+
+    if @spell_x and @spell_y
+      box1 = CollisionBox.new(@player.x, @player.y, @player.pos_x, @player.pos_y)
+      box2 = CollisionBox.new((@spell_x - (@spell.width / 2)), (@spell_y - (@spell.width / 2)), (@spell_x + (@spell.width / 2)), (@spell_y + (@spell.height / 2)))
+      collided = box1.collided_with(box2)
+    end
+  end
+
+  def draw
+    @map.draw(@camera.x, @camera.y, 0, 2, 2)
+
+    @player.draw
+
+    if @spell_x and @spell_y then
+      @mod = Gosu::milliseconds unless @mod
+      fade_out = ((Gosu::milliseconds - @mod) / 5) % 0xFF
+      if fade_out >= 252
+        @spell_x, @spell_y, @mod = nil
+      else
+        alpha = 0xFF - fade_out
+        @spell.draw(@spell_x - (@spell.width / 2), @spell_y - (@spell.height / 2), 1, 1, 1, Gosu::Color.new(alpha, 255, 255, 255))
+      end
+    end
+  end
+
+  def needs_cursor?; true; end
+
+  private
+
+  def handle_input
     if button_down? Gosu::KbLeft or button_down? Gosu::GpLeft then
       mid_of_screen = Screen::WIDTH / 2
       if @camera.is_touching_edge?(:left)
@@ -94,46 +128,5 @@ class Screen < Gosu::Window
         @spell_y = mouse_y
       end
     end
-    @spell_cooldown = 0 if (Gosu::milliseconds - @spell_cooldown) >= 3000
-
-    if @spell_x and @spell_y
-      box1 = CollisionBox.new(@player.x, @player.y, @player.pos_x, @player.pos_y)
-      box2 = CollisionBox.new((@spell_x - (@spell.width / 2)), (@spell_y - (@spell.width / 2)), (@spell_x + (@spell.width / 2)), (@spell_y + (@spell.height / 2)))
-      collided = box1.collided_with(box2)
-    end
   end
-
-  def draw
-    @map.draw(@camera.x, @camera.y, 0, 2, 2)
-
-    # Tile drawing
-    #translate(@camera.x, @camera.y) do
-    #  @new_level.each.with_index do |row, h|
-    #    row.each.with_index do |tile, w|
-    #      case tile
-    #      when 0
-    #        @floor1.draw(32 * w, 32 * h, 0)
-    #      when 2
-    #        @floor4.draw(32 * w, 32 * h, 0)
-    #      end
-    #    end
-    #  end
-    #end
-
-
-    @player.draw
-
-    if @spell_x and @spell_y then
-      @mod = Gosu::milliseconds unless @mod
-      fade_out = ((Gosu::milliseconds - @mod) / 5) % 0xFF
-      if fade_out >= 252
-        @spell_x, @spell_y, @mod = nil
-      else
-        alpha = 0xFF - fade_out
-        @spell.draw(@spell_x - (@spell.width / 2), @spell_y - (@spell.height / 2), 1, 1, 1, Gosu::Color.new(alpha, 255, 255, 255))
-      end
-    end
-  end
-
-  def needs_cursor?; true; end
 end

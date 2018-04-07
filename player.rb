@@ -25,17 +25,45 @@ class Player
   def move(direction, options)
     case direction
     when 0
-      @pos = 36
-      @y -= @vel unless options[:stand_still]
+      future_position = CollisionBox.new(@x, @y - @vel, pos_x, pos_y - @vel)
+      space_is_occupied = Screen::PROPS.any? do |prop|
+        future_position.collided_with(prop) 
+      end
+
+      unless space_is_occupied
+        @pos = 36
+        @y -= @vel unless options[:stand_still]
+      end
     when 1
-      @pos = 0
-      @y += @vel unless options[:stand_still]
+      future_position = CollisionBox.new(@x, @y + @vel, pos_x, pos_y + @vel)
+      space_is_occupied = Screen::PROPS.any? do |prop|
+        future_position.collided_with(prop) 
+      end
+
+      unless space_is_occupied
+        @pos = 0
+        @y += @vel unless options[:stand_still]
+      end
     when 2
-      @pos = 12
-      @x -= @vel unless options[:stand_still]
+      future_position = CollisionBox.new(@x - @vel, @y, pos_x - @vel, pos_y)
+      space_is_occupied = Screen::PROPS.any? do |prop|
+        future_position.collided_with(prop) 
+      end
+
+      unless space_is_occupied
+        @pos = 12
+        @x -= @vel unless options[:stand_still]
+      end
     when 3
-      @pos = 24
-      @x += @vel unless options[:stand_still]
+      future_position = CollisionBox.new(@x + @vel, @y, pos_x + @vel, pos_y)
+      space_is_occupied = Screen::PROPS.any? do |prop|
+        future_position.collided_with(prop) 
+      end
+
+      unless space_is_occupied
+        @pos = 24
+        @x += @vel unless options[:stand_still]
+      end
     end 
     @anim = Gosu::milliseconds / 100 % 3
   end
