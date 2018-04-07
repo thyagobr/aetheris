@@ -14,8 +14,7 @@ class Camera
   end
 
   def move_right
-    translating_to = Screen::WIDTH + (@x - 3).abs
-    @x -= 3 if translating_to <= @total_level_width * Screen::TILE_SIZE
+    @x -= 3
   end
 
   def move_up
@@ -24,10 +23,11 @@ class Camera
   end
 
   def move_down
-    translating_to = Screen::HEIGHT + (@y - 3).abs
-    @y -= 3 if translating_to <= @total_level_height * Screen::TILE_SIZE
+    @y -= 3
   end
 
+  # is the camera touching the edge of the map?
+  # that is: we should stop here.
   def is_touching_edge?(side)
     case side
     when :top
@@ -35,11 +35,9 @@ class Camera
     when :left
       return @x == 0
     when :bottom
-      # this reducing is because the numbers aren't matching exactly: they differ by a fex pixels
-      return (@total_level_height * Screen::TILE_SIZE) - (Screen::HEIGHT + @y.abs) <= 2
+      return @y.abs >= Screen::MAP_HEIGHT - Screen::HEIGHT
     when :right
-      # this reducing is because the numbers aren't matching exactly: they differ by a fex pixels
-      return (@total_level_width * Screen::TILE_SIZE) - (Screen::WIDTH + @x.abs) <= 2
+      return @x.abs >= Screen::MAP_WIDTH - Screen::WIDTH
     end
   end
 end

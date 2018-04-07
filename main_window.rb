@@ -9,23 +9,23 @@ require './collision_box'
 require './player'
 require './screen'
 
-t1 = Thread.new do
+#t1 = Thread.new do
   Screen.new.show
-end
+#end
 
-t2 = Thread.new do
-  server = TCPServer.open(2000)
-  loop do
-    client = server.accept
-    while line = client.gets
-      puts ".:! #{line}"
-      client.puts ".:! Unknown command"
-    end
-    client.puts ".:! Tchau"
-    client.close
-  end
-  server.close
-end
-
-t1.join
-t2.join
+#t2 = Thread.new do
+#  server = TCPServer.open(2000)
+#  loop do
+#    client = server.accept
+#    while line = client.gets
+#      puts ".:! #{line}"
+#      client.puts ".:! Unknown command"
+#    end
+#    client.puts ".:! Tchau"
+#    client.close
+#  end
+#  server.close
+#end
+#
+#t1.join
+#t2.join

@@ -12,7 +12,7 @@ class Screen < Gosu::Window
     @y = 0
     @speed = 5
     super(WIDTH, HEIGHT, fullscreen = false)
-    @map = Gosu::Image.new(self, "images/map.jpg", true, 0, 0, MAP_WIDTH, MAP_HEIGHT)
+    @map = Gosu::Image.new("images/map.jpg")
   end
 
   def update

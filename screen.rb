@@ -1,6 +1,8 @@
 class Screen < Gosu::Window
   WIDTH = 800
   HEIGHT = 640
+  MAP_WIDTH = 1008 * 2
+  MAP_HEIGHT = 689 * 2
   TILE_SIZE = 32
 
   def initialize
@@ -14,15 +16,13 @@ class Screen < Gosu::Window
     @new_level = Array.new(@height_tiles, Array.new(@width_tiles + 1, 0))
     @new_level << Array.new(@width_tiles + 1, 2)
 
-    @floor1 = Gosu::Image.new(self, Utils.image_path_for("castlefloors"), true, 0, 0, 32, 32)
-    @floor2 = Gosu::Image.new(self, Utils.image_path_for("castlefloors"), true, 32 * 4, 0, 32, 32)
-    @floor4 = Gosu::Image.new(self, Utils.image_path_for("castlefloors"), true, 32 * 9, 0, 32 * 4, 32)
-    @spell = Gosu::Image.new(self, Utils.image_path_for("explosion"), true, 0, 0, 32 * 3, 32 * 3)
+    @spell = Gosu::Image.new(Utils.image_path_for("explosion"), rect: [0, 0, 32 * 3, 32 * 3])
     @spell_cooldown = 0
-    @game_name = Gosu::Image.from_text(self, "Aetheris", Gosu.default_font_name, 100)
+    @game_name = Gosu::Image.from_text("Aetheris", 100)
     @player = Player.new(self)
     @player.warp(300, 200)
     @visibility = { fog: 3 }
+    @map = Gosu::Image.new("images/map.jpg")
     @camera = Camera.new(x: 0, y: 0, width: @new_level[0].count, height: @new_level.count)
   end
 
@@ -33,30 +33,56 @@ class Screen < Gosu::Window
 
   def update
     if button_down? Gosu::KbLeft or button_down? Gosu::GpLeft then
-      @camera.move_left
-      @player.left if @player.x >= 0 && @camera.is_touching_edge?(:left)
+      mid_of_screen = Screen::WIDTH / 2
+      if @camera.is_touching_edge?(:left)
+        player_hit_edge = @player.x - @player.vel <= 0
+        @player.left(stand_still: player_hit_edge)
+      else
+        if @player.x > mid_of_screen
+          @player.left
+        else
+          @camera.move_left 
+          @player.left(stand_still: true)
+        end
+      end
     end
 
     if button_down? Gosu::KbRight or button_down? Gosu::GpRight then
-      mid_of_screen = (Screen::WIDTH + @camera.x.abs) / 2
+      mid_of_screen = Screen::WIDTH / 2
+
       if @player.x < mid_of_screen || @camera.is_touching_edge?(:right)
-        @player.right if @player.x <= @width - 32
+        camera_hit_edge_but_player_didnt = @player.x <= Screen::WIDTH - Screen::TILE_SIZE
+        @player.right if camera_hit_edge_but_player_didnt
       else
         @camera.move_right
+        # make the player pretend it is moving, otherwise it slides on screen
+        @player.right(stand_still: true)
       end
     end
 
     if button_down? Gosu::KbUp or button_down? Gosu::GpButton0 then
-      @camera.move_up
-      @player.up if @player.y >= 0 && @camera.is_touching_edge?(:top)
+      mid_of_screen = Screen::HEIGHT / 2
+      if @camera.is_touching_edge?(:top)
+        player_hit_edge = @player.y - @player.vel <= 0
+        @player.up(stand_still: player_hit_edge)
+      else
+        if @player.y > mid_of_screen
+          @player.up
+        else
+          @camera.move_up
+          @player.up(stand_still: true)
+        end
+      end
     end
 
     if button_down? Gosu::KbDown or button_down? Gosu::GpButton1 then
-      mid_of_screen = (Screen::HEIGHT + @camera.y.abs) / 2
+      mid_of_screen = Screen::HEIGHT / 2
       if @player.y < mid_of_screen || @camera.is_touching_edge?(:bottom)
-        @player.down if @player.y <= @height - 32
+        camera_hit_edge_but_player_didnt = @player.y <= Screen::HEIGHT - Screen::TILE_SIZE
+        @player.down if camera_hit_edge_but_player_didnt
       else
         @camera.move_down
+        @player.down(stand_still: true)
       end
     end
 
@@ -78,18 +104,22 @@ class Screen < Gosu::Window
   end
 
   def draw
-    translate(@camera.x, @camera.y) do
-      @new_level.each.with_index do |row, h|
-        row.each.with_index do |tile, w|
-          case tile
-          when 0
-            @floor1.draw(32 * w, 32 * h, 0)
-          when 2
-            @floor4.draw(32 * w, 32 * h, 0)
-          end
-        end
-      end
-    end
+    @map.draw(@camera.x, @camera.y, 0, 2, 2)
+
+    # Tile drawing
+    #translate(@camera.x, @camera.y) do
+    #  @new_level.each.with_index do |row, h|
+    #    row.each.with_index do |tile, w|
+    #      case tile
+    #      when 0
+    #        @floor1.draw(32 * w, 32 * h, 0)
+    #      when 2
+    #        @floor4.draw(32 * w, 32 * h, 0)
+    #      end
+    #    end
+    #  end
+    #end
+
 
     @player.draw
 

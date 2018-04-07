@@ -1,5 +1,5 @@
 class Player
-  attr_reader :x, :y
+  attr_accessor :x, :y, :vel
 
   def initialize(window)
     @poses = Gosu::Image.load_tiles(window, Utils.image_path_for("crisiscorepeeps"), 32, 32, true)
@@ -17,25 +17,25 @@ class Player
   def pos_x; @x + 32; end
   def pos_y; @y + 32; end
 
-  def up; move(0); end
-  def down; move(1); end
-  def left; move(2); end
-  def right; move(3); end
+  def up(options = {}); move(0, options); end
+  def down(options = {}); move(1, options); end
+  def left(options = {}); move(2, options); end
+  def right(options = {}); move(3, options); end
 
-  def move(direction)
+  def move(direction, options)
     case direction
     when 0
       @pos = 36
-      @y -= @vel
+      @y -= @vel unless options[:stand_still]
     when 1
       @pos = 0
-      @y += @vel
+      @y += @vel unless options[:stand_still]
     when 2
       @pos = 12
-      @x -= @vel
+      @x -= @vel unless options[:stand_still]
     when 3
       @pos = 24
-      @x += @vel
+      @x += @vel unless options[:stand_still]
     end 
     @anim = Gosu::milliseconds / 100 % 3
   end
