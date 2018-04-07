@@ -11,11 +11,9 @@ class Screen < Gosu::Window
     @width_tiles = @width / 32
     @height = 640
     @height_tiles = @height / 32
+    @keys = []
     super(@width, @height, fullscreen = false)
     self.caption = "Aetheris"
-
-    @new_level = Array.new(@height_tiles, Array.new(@width_tiles + 1, 0))
-    @new_level << Array.new(@width_tiles + 1, 2)
 
     @spell = Gosu::Image.new(Utils.image_path_for("explosion"), rect: [0, 0, 32 * 3, 32 * 3])
     @spell_cooldown = 0
@@ -24,12 +22,13 @@ class Screen < Gosu::Window
     @player.warp(300, 200)
     @visibility = { fog: 3 }
     @map = Gosu::Image.new("images/map.jpg")
-    @camera = Camera.new(x: 0, y: 0, width: @new_level[0].count, height: @new_level.count)
+    @camera = Camera.new(x: 0, y: 0, width: WIDTH, height: HEIGHT)
   end
 
   def button_down(id)
     close if id == Gosu::KbEscape
     @byebug = !@byebug if id == Gosu::KbP
+    register_key_and_check_spell_match(id) if [Gosu::KbU, Gosu::KbI, Gosu::KbO, Gosu::KbP].include?(id)
   end
 
   def update
@@ -128,5 +127,18 @@ class Screen < Gosu::Window
         @spell_y = mouse_y
       end
     end
+  end
+
+  def register_key_and_check_spell_match(key)
+    if @keys.count < 3
+      @keys << key
+    else
+      @keys[3] = @keys[2]
+      @keys[2] = @keys[1]
+      @keys[1] = @keys[0]
+      @keys[0] = key
+    end
+    #Gosu::Image.from_text(Gosu.button_id_to_char(key), 100)
+    pp @keys.map { |n| Gosu.button_id_to_char(n) }
   end
 end
