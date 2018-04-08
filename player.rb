@@ -1,5 +1,5 @@
 class Player
-  attr_accessor :x, :y, :vel
+  attr_accessor :x, :y, :vel, :invisible
 
   def initialize(window)
     @poses = Gosu::Image.load_tiles(window, Utils.image_path_for("crisiscorepeeps"), 32, 32, true)
@@ -8,6 +8,7 @@ class Player
     @pos = 0
     @anim = 0
     @score = 0
+    @invisible = false
   end
 
   def warp(x, y)
@@ -69,6 +70,13 @@ class Player
   end
 
   def draw
-    @poses[@pos + @anim].draw(@x, @y, 1)
+    transparency_mode = is_visible? ? 0xff_ffffff : 0x33_ffffff
+    @poses[@pos + @anim].draw(@x, @y, 1, 2, 2, transparency_mode)
+  end
+
+  private
+
+  def is_visible?
+    !@invisible ||= false
   end
 end

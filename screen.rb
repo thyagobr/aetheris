@@ -34,6 +34,8 @@ class Screen < Gosu::Window
   def update
     handle_input
 
+    movement_direction
+
     @spell_cooldown = 0 if (Gosu::milliseconds - @spell_cooldown) >= 3000
 
     if @spell_x and @spell_y
@@ -55,7 +57,7 @@ class Screen < Gosu::Window
         @spell_x, @spell_y, @mod = nil
       else
         alpha = 0xFF - fade_out
-        @spell.draw(@spell_x - (@spell.width / 2), @spell_y - (@spell.height / 2), 1, 1, 1, Gosu::Color.new(alpha, 255, 255, 255))
+        @spell.draw(@spell_x - (@spell.width / 2), @spell_y - (@spell.height / 2), 1, 2, 2, Gosu::Color.new(alpha, 255, 255, 255))
       end
     end
   end
@@ -121,24 +123,79 @@ class Screen < Gosu::Window
 
     if button_down? Gosu::MsLeft then
       puts "Player x,y: #{@player.x},#{@player.y}"
-      if @spell_cooldown == 0
-        @spell_cooldown = Gosu::milliseconds
-        @spell_x = mouse_x 
-        @spell_y = mouse_y
-      end
     end
   end
 
   def register_key_and_check_spell_match(key)
-    if @keys.count < 3
-      @keys << key
+    if @keys.count < 2
+      if key == Gosu::KbP
+        puts "The spell needs three spheres"
+      else
+        @keys << key
+      end
     else
-      @keys[3] = @keys[2]
-      @keys[2] = @keys[1]
-      @keys[1] = @keys[0]
-      @keys[0] = key
+      if key == Gosu::KbP
+        # spell: decoy
+        if @keys == [Gosu::KbI, Gosu::KbI, Gosu::KbI]
+          @player.invisible = true
+          # spell: dimensional shift
+        elsif @keys == [Gosu::KbO, Gosu::KbO, Gosu::KbO]
+          direction = movement_direction
+          shift = 120
+          x = case direction[0]
+          when :left
+            @player.x - shift 
+          when :right
+            @player.x + shift
+          else
+            @player.x
+          end
+
+          y = case direction[1]
+          when :up
+            @player.y - shift 
+          when :down
+            @player.y + shift
+          else
+            @player.y
+          end
+
+          @player.x = x
+          @player.y = y
+        elsif @keys = [Gosu::KbU, Gosu::KbU, Gosu::KbU]
+          if @spell_cooldown == 0
+            @spell_cooldown = Gosu::milliseconds
+            @spell_x = @player.x + 16
+            @spell_y = @player.y + 16
+          end
+        end
+      else
+        @keys[2] = @keys[1]
+        @keys[1] = @keys[0]
+        @keys[0] = key
+      end
     end
-    #Gosu::Image.from_text(Gosu.button_id_to_char(key), 100)
+
     pp @keys.map { |n| Gosu.button_id_to_char(n) }
+  end
+
+  def movement_direction
+    x_direction = if button_down? Gosu::KbLeft
+                    :left
+                  elsif button_down? Gosu::KbRight
+                    :right
+                  else
+                    :still
+                  end
+
+    y_direction = if button_down? Gosu::KbUp
+                    :up
+                  elsif button_down? Gosu::KbDown
+                    :down
+                  else
+                    :still
+                  end
+
+    [x_direction, y_direction]
   end
 end
