@@ -7,10 +7,11 @@ require './camera'
 require './utils'
 require './collision_box'
 require './player'
+require './npc'
 require './screen'
 
 #t1 = Thread.new do
-  Screen.new.show
+Screen.new.show
 #end
 
 #t2 = Thread.new do

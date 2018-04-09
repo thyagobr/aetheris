@@ -26,17 +26,32 @@ class Screen < Gosu::Window
     @spell_cooldown = 0
     @game_name = Gosu::Image.from_text("Aetheris", 100)
     @player = Player.new(self)
-    @character = Gosu::Image.new(Utils.image_path_for("crisiscorepeeps"), rect: [32 * 6, 0, 32, 32])
+    @npc = NPC.new
     @player.warp(300, 200)
     @visibility = { fog: 3 }
     @map = Gosu::Image.new("images/map.jpg")
     @camera = Camera.new(x: 0, y: 0, width: WIDTH, height: HEIGHT)
+    @interacting = false
   end
 
   def button_down(id)
     close if id == Gosu::KbEscape
     @byebug = !@byebug if id == Gosu::KbP
     register_key_and_check_spell_match(id) if [Gosu::KbU, Gosu::KbI, Gosu::KbO, Gosu::KbP].include?(id)
+
+    # interaction
+    if id == Gosu::KbF
+      interaction_distance = 50
+      player_box = CollisionBox.new(@player.x - interaction_distance, @player.y - interaction_distance, @player.pos_x + interaction_distance, @player.pos_y + interaction_distance)
+      npc_box = @npc.collision_box(@camera)
+      collided = player_box.collided_with(npc_box)
+      if collided
+        puts "Hello!"
+        @interacting = !@interacting
+      else
+        @interacting = false
+      end
+    end
   end
 
   def update
@@ -45,21 +60,19 @@ class Screen < Gosu::Window
     movement_direction
 
     @spell_cooldown = 0 if (Gosu::milliseconds - @spell_cooldown) >= 3000
-
-    if @spell_x and @spell_y
-      box1 = CollisionBox.new(@player.x, @player.y, @player.pos_x, @player.pos_y)
-      box2 = CollisionBox.new((@spell_x - (@spell.width / 2)), (@spell_y - (@spell.width / 2)), (@spell_x + (@spell.width / 2)), (@spell_y + (@spell.height / 2)))
-      collided = box1.collided_with(box2)
-    end
   end
 
   def draw
     @map.draw(@camera.x, @camera.y, 0, 2, 2)
 
     @player.draw
-    # this summing with camera guarantees the position is on global scale.
+    # this passing camera guarantees the position is on global scale.
     # since camera is negative as it progresses, the character gets drawn outside of canvas
-    @character.draw(@camera.x + 64, @camera.y + 400, 1, 2, 2)
+    @npc.draw(@camera)
+
+    if @interacting
+      Gosu.draw_rect(16, 400, 800 - 32, 640 - 400 - 16, Gosu::Color.argb(0xbb_000000))
+    end
 
     if @spell_x and @spell_y then
       @mod = Gosu::milliseconds unless @mod
