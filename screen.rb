@@ -6,6 +6,13 @@ class Screen < Gosu::Window
   TILE_SIZE = 32
   PROPS = [CollisionBox.new(0, 0, 55, 140)]
 
+  # todo:
+  # * multiplayer
+  # * interaction system
+  # * inventory
+  # * spell ui
+  # * dialogue ui
+  # * engine-like map editor
   def initialize
     @width = 800
     @width_tiles = @width / 32
