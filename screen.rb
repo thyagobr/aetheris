@@ -26,6 +26,7 @@ class Screen < Gosu::Window
     @spell_cooldown = 0
     @game_name = Gosu::Image.from_text("Aetheris", 100)
     @player = Player.new(self)
+    @character = Gosu::Image.new(Utils.image_path_for("crisiscorepeeps"), rect: [32 * 6, 0, 32, 32])
     @player.warp(300, 200)
     @visibility = { fog: 3 }
     @map = Gosu::Image.new("images/map.jpg")
@@ -56,6 +57,9 @@ class Screen < Gosu::Window
     @map.draw(@camera.x, @camera.y, 0, 2, 2)
 
     @player.draw
+    # this summing with camera guarantees the position is on global scale.
+    # since camera is negative as it progresses, the character gets drawn outside of canvas
+    @character.draw(@camera.x + 64, @camera.y + 400, 1, 2, 2)
 
     if @spell_x and @spell_y then
       @mod = Gosu::milliseconds unless @mod
@@ -130,6 +134,7 @@ class Screen < Gosu::Window
 
     if button_down? Gosu::MsLeft then
       puts "Player x,y: #{@player.x},#{@player.y}"
+      puts "Camera x,y: #{@camera.x},#{@camera.y}"
     end
   end
 
