@@ -32,6 +32,15 @@ class Screen < Gosu::Window
     @map = Gosu::Image.new("images/map.jpg")
     @camera = Camera.new(x: 0, y: 0, width: WIDTH, height: HEIGHT)
     @interacting = false
+    @spell_avalanche_of_fire = nil
+  end
+
+  def spell_avalanche_of_fire
+    color = Gosu::Color.argb(0xbb_ff0000)
+    alpha = (Gosu::milliseconds / 3) % 400
+    alpha = 200 - (alpha - 200) if alpha > 200
+    color.alpha = alpha
+    Gosu.draw_rect(@camera.x + 300, @camera.y + 0, 200, 640, color) 
   end
 
   def button_down(id)
@@ -69,6 +78,17 @@ class Screen < Gosu::Window
     # this passing camera guarantees the position is on global scale.
     # since camera is negative as it progresses, the character gets drawn outside of canvas
     @npc.draw(@camera)
+
+    # mimick casting
+    spell_avalanche_of_fire
+    @spell_aof_start_cast ||= Gosu::milliseconds
+
+    if @spell_aof_start_cast
+      if (Gosu::milliseconds - @spell_aof_start_cast) > 3000
+        puts "BOOM!"
+        @spell_aof_start_cast = nil
+      end
+    end
 
     if @interacting
       Gosu.draw_rect(16, 400, 800 - 32, 640 - 400 - 16, Gosu::Color.argb(0xbb_000000))
