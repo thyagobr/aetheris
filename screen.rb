@@ -35,14 +35,6 @@ class Screen < Gosu::Window
     @spell_avalanche_of_fire = nil
   end
 
-  def spell_avalanche_of_fire
-    color = Gosu::Color.argb(0xbb_ff0000)
-    alpha = (Gosu::milliseconds / 3) % 400
-    alpha = 200 - (alpha - 200) if alpha > 200
-    color.alpha = alpha
-    Gosu.draw_rect(@camera.x + 300, @camera.y + 0, 200, 640, color) 
-  end
-
   def button_down(id)
     close if id == Gosu::KbEscape
     @byebug = !@byebug if id == Gosu::KbP
@@ -60,6 +52,10 @@ class Screen < Gosu::Window
       else
         @interacting = false
       end
+    end
+
+    if id == Gosu::KbT
+      @npc.cast(@player)
     end
   end
 
@@ -80,8 +76,6 @@ class Screen < Gosu::Window
     @npc.draw(@camera)
 
     # mimick casting
-    spell_avalanche_of_fire
-    @spell_aof_start_cast ||= Gosu::milliseconds
 
     if @spell_aof_start_cast
       if (Gosu::milliseconds - @spell_aof_start_cast) > 3000
@@ -188,22 +182,22 @@ class Screen < Gosu::Window
           direction = movement_direction
           shift = 120
           x = case direction[0]
-          when :left
-            @player.x - shift 
-          when :right
-            @player.x + shift
-          else
-            @player.x
-          end
+              when :left
+                @player.x - shift 
+              when :right
+                @player.x + shift
+              else
+                @player.x
+              end
 
           y = case direction[1]
-          when :up
-            @player.y - shift 
-          when :down
-            @player.y + shift
-          else
-            @player.y
-          end
+              when :up
+                @player.y - shift 
+              when :down
+                @player.y + shift
+              else
+                @player.y
+              end
 
           @player.x = x
           @player.y = y

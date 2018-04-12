@@ -71,7 +71,7 @@ class Player
 
   def draw
     transparency_mode = is_visible? ? 0xff_ffffff : 0x33_ffffff
-    @poses[@pos + @anim].draw(@x, @y, 1, 2, 2, transparency_mode)
+    @poses[@pos + @anim].draw(@x, @y, 1, 1.5, 1.5, transparency_mode)
   end
 
   private
