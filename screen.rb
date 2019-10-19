@@ -176,7 +176,7 @@ class Screen < Gosu::Window
       if key == Gosu::KbP
         # spell: decoy
         if @keys == [Gosu::KbI, Gosu::KbI, Gosu::KbI]
-          @player.invisible = true
+          @player.invisible = !@player.invisible
           # spell: dimensional shift
         elsif @keys == [Gosu::KbO, Gosu::KbO, Gosu::KbO]
           direction = movement_direction

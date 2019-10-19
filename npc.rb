@@ -13,13 +13,10 @@ class NPC
       alpha = (Gosu::milliseconds / 3) % 400
       alpha = 200 - (alpha - 200) if alpha > 200
       color.alpha = alpha
-      #Gosu.draw_rect(camera.x + @x, camera.y + @y, 32 * 2, 640, color) 
-      puts "camera x,y: #{camera.x}, #{camera.y}"
-      puts "target x,y: #{@target.x}, #{@target.y}"
-      Gosu.draw_quad(camera.x + @x, camera.y + @y, color,
-                     camera.x + @x + 64, camera.y + @y, color,
-                     camera.x.abs + @target.x, camera.y.abs + @target.y + 32, color,
-                     camera.x.abs + @target.x + 32, camera.y.abs + @target.y + 32, color,
+      Gosu.draw_quad(camera.x + @x - 50, camera.y + @y + 64, color,
+                     camera.x + @x + 50 + 64, camera.y + @y + 64, color,
+                     camera.x + @x - 50, camera.y + @y + 400, color,
+                     camera.x + @x + 50 + 64, camera.y + @y + 400, color,
                      1)
 
       if Gosu::milliseconds - @spell_aof_start_cast > 3000
