@@ -30,6 +30,7 @@ class Screen < Gosu::Window
     @player.warp(300, 200)
     @visibility = { fog: 3 }
     @map = Gosu::Image.new("images/map.jpg")
+    @low_grass = @map.subimage(32, 32 * 2, 22, 22)
     @camera = Camera.new(x: 0, y: 0, width: WIDTH, height: HEIGHT)
     @interacting = false
     @spell_avalanche_of_fire = nil
@@ -69,6 +70,7 @@ class Screen < Gosu::Window
 
   def draw
     @map.draw(@camera.x, @camera.y, 0, 2, 2)
+    @low_grass.draw(0, 0, 0, 2, 2)
 
     @player.draw
     # this passing camera guarantees the position is on global scale.
