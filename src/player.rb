@@ -1,7 +1,7 @@
 require './src/utils'
 
 class Player
-  attr_accessor :x, :y, :vel, :invisible
+  attr_accessor :x, :y, :vel, :invisible, :max_movement
 
   def initialize(window)
     @poses = Gosu::Image.load_tiles(window, Utils.image_path_for("crisiscorepeeps"), 32, 32, true)
@@ -11,6 +11,7 @@ class Player
     @anim = 0
     @score = 0
     @invisible = false
+    @max_movement = 6
   end
 
   def warp(x, y)
