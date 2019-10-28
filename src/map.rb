@@ -1,6 +1,7 @@
 require 'gosu'
 require 'byebug'
 require './src/player'
+require './src/actions/attack'
 
 class Map < Gosu::Window
   attr_accessor :tile_position_in_array, :player_moving
@@ -11,12 +12,14 @@ class Map < Gosu::Window
   MAP_WIDTH = WIDTH * 4
   MAP_HEIGHT = HEIGHT * 2
 
+  # todo: turn this into a hash - using actual tile names or colors
   TILES = [
     0xbb_00aa00, # Green       - standard tile
     0xbb_f0aa00, # Sand yellow - random selection
     0xbb_c00080, # Pink        - selected player
-    0xbb_0f5477, # Dark purple - selectable movement 
-    0xbb_f70000  # Red         - non-selectable movement
+    0xbb_0f5477, # Dark purple - highlighted possible movement 
+    0xbb_f70000, # Red         - non-selectable movement
+    0xbb_f70390  # ...         - selected movement desination
   ]
 
   # Args may include:
@@ -24,7 +27,10 @@ class Map < Gosu::Window
   def initialize(**args)
     super(WIDTH, HEIGHT, fullscreen = false)
     load_map(args)
-    spawn_player
+    spawn_players
+    start_turn!
+
+    @byebug = false
   end
 
   def needs_cursor?; true; end
@@ -37,31 +43,48 @@ class Map < Gosu::Window
     close if id == Gosu::KbEscape
     save_map if id == Gosu::KbS
     # player movement
+    # press W to highlight current player's movements possibilities
+    # press W to un-highlight or
+    # select destination and press W to go - ends turn
     if button_down?(Gosu::KbW)
       if @player_moving
-        @map[player_tile_position] = 0 # reset the color of former player selection tile
-        @map[@player_last_movement_to] = 0 # reset the color of selectable movement to
-        @player.warp(*array_index_to_coords(@player_last_movement_to))
         @player_moving = false
+        clear_previous_movement_grid!(current_player.x, current_player.y, current_player.max_movement)
+        # This variable exists to know where the user last clicked
+        if @player_last_movement_to && can_player_move_there?
+          # reset the color of former player selection tile
+          @map[player_tile_position] = 0
+          # reset the color of selectable movement to
+          @map[@player_last_movement_to] = 0
+          # break the [x, y] array into x, y variables and warps the player
+          # to the correct position.
+          current_player.warp(*array_index_to_coords(@player_last_movement_to))
+          next_player_in_turn!
+          # reset the last tile selected tracker
+          @player_last_movement_to = nil
+        end
       else
-        @player_moving = true if is_player_selected?
+        @player_moving = true
+        draw_movement_grid!
       end
+    elsif button_down?(Gosu::KbA)
+      Actions::Attack.perform
     end
   end
 
   def update
-    left_click if button_down?(Gosu::MsLeft) # temp
     handle_input
   end
 
   def draw
-    @player.draw
+    @players.each(&:draw)
 
     draw_current_camera_view
   end
 
   private
 
+  # todo: document the map format and logic
   def load_map(args)
     if args[:map_file]
       puts "Loading file: #{args[:map_file]}"
@@ -69,6 +92,8 @@ class Map < Gosu::Window
     else
       @map = []
 
+      # todo: this loop happens a lot. Maybe accept the loops and yield x and y
+      # (or yield a direct access to the correct array position each turn?)
       (WIDTH / TILE_SIZE).times do |x|
         (HEIGHT / TILE_SIZE).times do |y|
           @map[x + y * (WIDTH / TILE_SIZE)] = 0
@@ -77,15 +102,25 @@ class Map < Gosu::Window
     end
   end
 
-  def spawn_player
-    @player = Player.new(self)
+  def spawn_players
+    @players = []
+    @players << Player.new(self)
+    player_2 = Player.new(self)
+    player_2.x = TILE_SIZE * 6
+    player_2.y = TILE_SIZE * 8
+    @players << player_2
+    @current_player_index = 0
     @player_moving = false
+  end
+
+  def current_player
+    @players[@current_player_index]
   end
 
   # Tile position is the position in the array number
   def player_tile_position
-    player_x = @player.x / TILE_SIZE # position in the array axis
-    player_y = @player.y / TILE_SIZE # position in the array axis
+    player_x = current_player.x / TILE_SIZE # position in the array axis
+    player_y = current_player.y / TILE_SIZE # position in the array axis
     player_x + player_y * (WIDTH / TILE_SIZE)
   end
 
@@ -93,18 +128,33 @@ class Map < Gosu::Window
     @tile_position_in_array && player_tile_position == @tile_position_in_array
   end
 
+  def gotcha
+    byebug if @byebug
+  end
+
   def left_click
     x = mouse_x.to_i / TILE_SIZE
     y = mouse_y.to_i / TILE_SIZE
     if @player_moving
       player_intended_movement_to = x + y * (WIDTH / TILE_SIZE)
+      # this means: if the player didn't select his own character's tile
       if not player_intended_movement_to == player_tile_position
-        @map[@player_last_movement_to] = 0 if @player_last_movement_to # reset former selection to standard_color
-        @player_last_movement_to = player_intended_movement_to # remember where we're selecting
-        tile_selection_color = can_player_move_there? ? 3 : 4
-        @map[@player_last_movement_to] = tile_selection_color # update the map color to movement_selection
+        # reset former selection to standard_color
+        @map[@player_last_movement_to] = @player_last_movement_to_tile_type if @player_last_movement_to
+        # which tile (array poisition) did the player just clicked at:
+        @player_last_movement_to = player_intended_movement_to
+        # let's remember what it was before we change it to highlighted selection
+        @player_last_movement_to_tile_type = @map[@player_last_movement_to]
+        # if we can move there, let's select the highlighted color
+        # (this choice was meaningful when you could click outside of the movement
+        # grid. It's not the case at the moment, but it doesn't interfere with the logic)
+        tile_selection_color = can_player_move_there? ? 5 : @player_last_movement_to_tile_type
+        # update the map color to movement_selection
+        @map[@player_last_movement_to] = tile_selection_color
       else
-        @map[@player_last_movement_to] = 0 if @player_last_movement_to # reset former selection to standard_color
+        # if the player clicked on him/herself, let simply
+        # reset the former selection to standard movement grid color
+        @map[@player_last_movement_to] = 3 if @player_last_movement_to
       end
     else
       @map[@tile_position_in_array] = 0 if @tile_position_in_array
@@ -121,12 +171,58 @@ class Map < Gosu::Window
     return false unless @player_last_movement_to
     tilepos_y = @player_last_movement_to / (WIDTH / TILE_SIZE)
     tilepos_x = @player_last_movement_to % (WIDTH / TILE_SIZE)
-    player_can_move_y = (tilepos_y - (@player.y / TILE_SIZE)).abs <= @player.max_movement
-    player_can_move_x = (tilepos_x - (@player.x / TILE_SIZE)).abs <= @player.max_movement
+    player_can_move_y = (tilepos_y - (current_player.y / TILE_SIZE)).abs <= current_player.max_movement
+    player_can_move_x = (tilepos_x - (current_player.x / TILE_SIZE)).abs <= current_player.max_movement
     player_can_move_y && player_can_move_x
   end
 
+  def clear_previous_movement_grid!(current_player_x, current_player_y, current_player_max_movement)
+    left = (current_player_x / TILE_SIZE) - current_player_max_movement
+    top = (current_player_y / TILE_SIZE) - current_player_max_movement
+    right = (current_player_x / TILE_SIZE) + current_player_max_movement
+    bottom = (current_player_y / TILE_SIZE) + current_player_max_movement
+
+    left = 0 if left < 0
+    top = 0 if top < 0
+    right = (WIDTH / TILE_SIZE) if right > (WIDTH / TILE_SIZE)
+    bottom = (HEIGHT / TILE_SIZE) if bottom > (HEIGHT / TILE_SIZE)
+
+    puts "#{left}, #{top}, #{right}, #{bottom}"
+
+    (top..bottom).each do |y|
+      (left..right).each do |x|
+        tile_pos = x + y * (WIDTH / TILE_SIZE)
+        next if tile_pos == player_tile_position
+        @map[tile_pos] = 0
+      end
+    end
+  end
+
+  def draw_movement_grid!
+    left = (current_player.x / TILE_SIZE) - current_player.max_movement
+    top = (current_player.y / TILE_SIZE) - current_player.max_movement
+    right = (current_player.x / TILE_SIZE) + current_player.max_movement
+    bottom = (current_player.y / TILE_SIZE) + current_player.max_movement
+
+    left = 0 if left < 0
+    top = 0 if top < 0
+    right = (WIDTH / TILE_SIZE) - 1 if right > (WIDTH / TILE_SIZE)
+    bottom = (HEIGHT / TILE_SIZE) - 1 if bottom > (HEIGHT / TILE_SIZE)
+
+    puts "#{left}, #{top}, #{right}, #{bottom}"
+
+    (top..bottom).each do |y|
+      (left..right).each do |x|
+        tile_pos = x + y * (WIDTH / TILE_SIZE)
+        next if tile_pos == player_tile_position
+        @map[tile_pos] = @player_moving ? 3 : 0
+      end
+    end
+  end
+
   def handle_input
+    left_click if button_down?(Gosu::MsLeft) # temp
+    @byebug = !@byebug if button_down?(Gosu::KbB)
   end
 
   def draw_current_camera_view
@@ -135,6 +231,15 @@ class Map < Gosu::Window
         Gosu.draw_rect((x * TILE_SIZE) + 1, (y * TILE_SIZE) + 1, TILE_SIZE - 2, TILE_SIZE - 2, Gosu::Color.argb(TILES[@map[x + y * (WIDTH / TILE_SIZE)]]))
       end
     end
+  end
+
+  def start_turn!
+    @map[player_tile_position] = 2
+  end
+
+  def next_player_in_turn!
+    @current_player_index = (@current_player_index + 1) % @players.size
+    @map[player_tile_position] = 2
   end
 
   def save_map
