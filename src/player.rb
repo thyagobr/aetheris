@@ -1,7 +1,8 @@
 require './src/utils'
+require './src/weapon'
 
 class Player
-  attr_accessor :x, :y, :max_movement
+  attr_accessor :x, :y, :max_movement, :weapon
 
   def initialize(window)
     @poses = Gosu::Image.load_tiles(window, Utils.image_path_for("crisiscorepeeps"), 32, 32, true)
@@ -10,6 +11,7 @@ class Player
     @anim = 0
     @invisible = false
     @max_movement = 6
+    @weapon = Weapon.new(range: 3, base_dice: 10)
   end
 
   def warp(x, y)

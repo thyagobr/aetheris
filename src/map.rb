@@ -2,9 +2,10 @@ require 'gosu'
 require 'byebug'
 require './src/player'
 require './src/actions/attack'
+require './src/grid'
 
 class Map < Gosu::Window
-  attr_accessor :tile_position_in_array, :player_moving
+  attr_accessor :tile_position_in_array, :player_moving, :map
 
   TILE_SIZE = 64
   WIDTH = TILE_SIZE * 20
@@ -49,7 +50,7 @@ class Map < Gosu::Window
     if button_down?(Gosu::KbW)
       if @player_moving
         @player_moving = false
-        clear_previous_movement_grid!(current_player.x, current_player.y, current_player.max_movement)
+        Grid.clear(x: current_player.x, y: current_player.y, range: current_player.max_movement, map: self)
         # This variable exists to know where the user last clicked
         if @player_last_movement_to && can_player_move_there?
           # reset the color of former player selection tile
@@ -65,10 +66,10 @@ class Map < Gosu::Window
         end
       else
         @player_moving = true
-        draw_movement_grid!
+        Grid.draw(x: current_player.x, y: current_player.y, range: current_player.max_movement, map: self)
       end
     elsif button_down?(Gosu::KbA)
-      Actions::Attack.perform
+      Actions::Attack.perform(character: current_player)
     end
   end
 
@@ -81,8 +82,6 @@ class Map < Gosu::Window
 
     draw_current_camera_view
   end
-
-  private
 
   # todo: document the map format and logic
   def load_map(args)
@@ -176,50 +175,6 @@ class Map < Gosu::Window
     player_can_move_y && player_can_move_x
   end
 
-  def clear_previous_movement_grid!(current_player_x, current_player_y, current_player_max_movement)
-    left = (current_player_x / TILE_SIZE) - current_player_max_movement
-    top = (current_player_y / TILE_SIZE) - current_player_max_movement
-    right = (current_player_x / TILE_SIZE) + current_player_max_movement
-    bottom = (current_player_y / TILE_SIZE) + current_player_max_movement
-
-    left = 0 if left < 0
-    top = 0 if top < 0
-    right = (WIDTH / TILE_SIZE) if right > (WIDTH / TILE_SIZE)
-    bottom = (HEIGHT / TILE_SIZE) if bottom > (HEIGHT / TILE_SIZE)
-
-    puts "#{left}, #{top}, #{right}, #{bottom}"
-
-    (top..bottom).each do |y|
-      (left..right).each do |x|
-        tile_pos = x + y * (WIDTH / TILE_SIZE)
-        next if tile_pos == player_tile_position
-        @map[tile_pos] = 0
-      end
-    end
-  end
-
-  def draw_movement_grid!
-    left = (current_player.x / TILE_SIZE) - current_player.max_movement
-    top = (current_player.y / TILE_SIZE) - current_player.max_movement
-    right = (current_player.x / TILE_SIZE) + current_player.max_movement
-    bottom = (current_player.y / TILE_SIZE) + current_player.max_movement
-
-    left = 0 if left < 0
-    top = 0 if top < 0
-    right = (WIDTH / TILE_SIZE) - 1 if right > (WIDTH / TILE_SIZE)
-    bottom = (HEIGHT / TILE_SIZE) - 1 if bottom > (HEIGHT / TILE_SIZE)
-
-    puts "#{left}, #{top}, #{right}, #{bottom}"
-
-    (top..bottom).each do |y|
-      (left..right).each do |x|
-        tile_pos = x + y * (WIDTH / TILE_SIZE)
-        next if tile_pos == player_tile_position
-        @map[tile_pos] = @player_moving ? 3 : 0
-      end
-    end
-  end
-
   def handle_input
     left_click if button_down?(Gosu::MsLeft) # temp
     @byebug = !@byebug if button_down?(Gosu::KbB)
@@ -278,6 +233,3 @@ class Map < Gosu::Window
     [(array_index % (WIDTH / TILE_SIZE)) * TILE_SIZE, (array_index / (WIDTH / TILE_SIZE)) * TILE_SIZE]
   end
 end
-
-#Map.new(map_file: "save_file").show
-Map.new.show
