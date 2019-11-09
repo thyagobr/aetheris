@@ -1,7 +1,7 @@
 require './src/map'
 
 class Grid
-  def self.draw(x:, y:, range:, map:)
+  def self.draw(x:, y:, range:, map:, tile: 3)
     left = (x / Map::TILE_SIZE) - range
     top = (y / Map::TILE_SIZE) - range
     right = (x / Map::TILE_SIZE) + range
@@ -18,7 +18,7 @@ class Grid
       (left..right).each do |x|
         tile_pos = x + y * (Map::WIDTH / Map::TILE_SIZE)
         next if tile_pos == map.player_tile_position
-        map.map[tile_pos] = map.player_moving ? 3 : 0
+        map.map[tile_pos] = map.player_moving ? 3 : tile
       end
     end
   end

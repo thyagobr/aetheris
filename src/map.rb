@@ -5,7 +5,7 @@ require './src/actions/attack'
 require './src/grid'
 
 class Map < Gosu::Window
-  attr_accessor :tile_position_in_array, :player_moving, :map
+  attr_accessor :tile_position_in_array, :player_moving, :map, :current_state
 
   TILE_SIZE = 64
   WIDTH = TILE_SIZE * 20
@@ -69,7 +69,15 @@ class Map < Gosu::Window
         Grid.draw(x: current_player.x, y: current_player.y, range: current_player.max_movement, map: self)
       end
     elsif button_down?(Gosu::KbA)
-      Actions::Attack.perform(character: current_player)
+      # todo: the necessity arises to create a hash of states the player
+      # may be in currently
+      if @player_attacking
+        Actions::Attack.perform(character: current_player, map: self)
+      else
+        Actions::Attack.perform(character: current_player, map: self)
+      end
+    elsif button_down?(Gosu::KbC)
+      # todo: implement a button for canceling the action
     end
   end
 
