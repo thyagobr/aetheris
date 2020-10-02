@@ -11,24 +11,77 @@
   let map_tiles = window.map.slice();
   ctx.beginPath();
 
-  // Draws the map
+  let keys_pressed = {
+    "KeyL": {
+      is_pressed: false,
+      perform: function () {
+        character.x += character.speed;
+      }
+    },
+    "KeyI": {
+      is_pressed: false,
+      perform: function () {
+        character.y -= character.speed;
+      }
+    },
+    "KeyK": {
+      is_pressed: false,
+      perform: function () {
+        character.y += character.speed;
+      }
+    },
+    "KeyJ": {
+      is_pressed: false,
+      perform: function () {
+        character.x -= character.speed;
+      }
+    }
+  };
+
+  const handle_keydown = function () {
+    Object.keys(keys_pressed).forEach(function (key_code) {
+      if (keys_pressed[key_code].is_pressed == true) {
+        keys_pressed[key_code].perform();
+      }
+    })
+  }
+
+  window.addEventListener('keydown', function (event) {
+    if (keys_pressed[event.code] == undefined) {
+      keys_pressed[event.code] = {
+        is_pressed: false,
+        perform: function () { console.log(event.code + " not implemented") } }
+    }
+    keys_pressed[event.code].is_pressed = true;
+  });
+
+  window.addEventListener('keyup', function (event) {
+    if (keys_pressed[event.code] == undefined) {
+      keys_pressed[event.code] = {
+        is_pressed: false,
+        perform: function () { console.log(event.code + " not implemented") } }
+    }
+    keys_pressed[event.code].is_pressed = false;
+  });
+
   window.addEventListener('mousedown', function (event) {
-    detect_mouse_click(event);
+    //detect_mouse_click(event);
   });
 
   window.addEventListener('mousemove', function (event) {
     if (event.buttons == 1) {
-      detect_mouse_click(event);
+      //detect_mouse_click(event);
     }
   });
 
   let character = {
     name: "Naztharune",
     image: "black",
-    x: 10,
-    y: 10,
-    width: 50,
-    height: 50
+    speed: 5,
+    x: map_tiles[0].x,
+    y: map_tiles[0].y,
+    width: map_tiles[0].width,
+    height: map_tiles[0].height
   }
 
   const is_within_canvas_bounds = function (event, tile) {
@@ -39,54 +92,25 @@
       (event.y < tile.y + tile.height));
   }
 
-  const detect_mouse_click = function (event) {
-    // Panel side
-    let tile = tiles.find(function (tile) {
-      return is_within_canvas_bounds(event, tile);
-    })
-    if (tile) {
-      current_tile = tile.tile;
-      // set somewhere which color is chosen
-      return;
-    }
-    const button_clicked = buttons.find(function(button) {
-      return is_within_canvas_bounds(event, button.rect);
-    });
-    if (button_clicked)
-    {
-      console.log(button_clicked.label)
-      button_clicked.perform();
-    }
-    // Drawing board side
-    else {
-      const drawing_board_dimensions = { x: 110, width: canvas.width - 110, y: 50, height: canvas.height - 50 }
-      if (is_within_canvas_bounds(event, drawing_board_dimensions)) {
-        tile = map_tiles.find(function (tile) {
-          return is_within_canvas_bounds(event, tile);
-        })
-        if (tile) {
-          console.log(tile)
-          tile.tile = current_tile;
-          repaint();
-        }
-      }
-    }
-  }
-
   const repaint = function () {
     map_tiles.forEach(function (tile) {
       if ((tile == undefined) || (tile.tile == null)) {
         ctx.strokeStyle = 'black';
-        ctx.strokeRect(110 + tile.x * 50, 50 + tile.y * 50, 50, 50);
+        ctx.strokeRect(tile.x * 50, tile.y * 50, 50, 50);
       } else {
         ctx.strokeStyle = 'black';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(110 + tile.x * 50, 50 + tile.y * 50, 50, 50);
         ctx.fillStyle = tile.tile
         ctx.fillRect(tile.x, tile.y, tile.width, tile.height);
       }
     })
+
+    ctx.beginPath();
+    ctx.fillStyle = character.image;
+    ctx.fillRect(character.x, character.y, character.width, character.height);
   }
 
-  repaint();
+  setInterval(function () {
+    handle_keydown();
+    repaint();
+  }, 33);
 })();

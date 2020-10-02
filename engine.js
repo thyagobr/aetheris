@@ -1,3 +1,5 @@
+// todo: the exported map is going with the drawing board's canvas offset
+// ----> remove it
 (function () {
   console.log("Engine started");
   const canvas = document.getElementById("canvas");
