@@ -1,5 +1,3 @@
-// todo: the exported map is going with the drawing board's canvas offset
-// ----> remove it
 (function () {
   console.log("Engine started");
   const canvas = document.getElementById("canvas");
@@ -106,8 +104,8 @@
     for (var x = 0; x < tiles_x; x++) {
       map_tiles[(y * tiles_x) + x] = {
         tile: null,
-        x: 110 + x * 50,
-        y: 50 + y * 50,
+        x: x * 50,
+        y: y * 50,
         width: 50,
         height: 50
       }
@@ -134,6 +132,15 @@
       (event.y < tile.y + tile.height));
   }
 
+  const apply_board_offset = function(tile) {
+    return {
+      width: tile.width,
+      height: tile.height,
+      x: tile.x + 110,
+      y: tile.y + 50
+    }
+  }
+
   const detect_mouse_click = function (event) {
     // Panel side
     let tile = tiles.find(function (tile) {
@@ -154,10 +161,10 @@
     }
     // Drawing board side
     else {
-      const drawing_board_dimensions = { x: 110, width: canvas.width - 110, y: 50, height: canvas.height - 50 }
-      if (is_within_canvas_bounds(event, drawing_board_dimensions)) {
+      const drawing_board_dimensions = { x: 0, width: canvas.width, y: 0, height: canvas.height }
+      if (is_within_canvas_bounds(event, apply_board_offset(drawing_board_dimensions))) {
         tile = map_tiles.find(function (tile) {
-          return is_within_canvas_bounds(event, tile);
+          return is_within_canvas_bounds(event, apply_board_offset(tile));
         })
         if (tile) {
           console.log(tile)
@@ -179,7 +186,7 @@
         ctx.lineWidth = 2;
         ctx.strokeRect(110 + x * 50, 50 + y * 50, 50, 50);
         ctx.fillStyle = tile.tile
-        ctx.fillRect(tile.x, tile.y, tile.width, tile.height);
+        ctx.fillRect(110 + tile.x, 50 + tile.y, tile.width, tile.height);
       }
     })
   }
