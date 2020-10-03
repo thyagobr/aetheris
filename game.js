@@ -30,10 +30,30 @@
 
   ctx.beginPath();
 
+  const block_movement_if_going_into_path_blocker = function (character, movement) {
+    // Big problem here: when we draw partially, even though
+    var future_character = { ...character, ...movement }
+    tile_x = Math.floor(future_character.x / 50);
+    tile_y = Math.floor(future_character.y / 50);
+    var future_tile = fetch_tile_for_xy_coord(tile_x, tile_y);
+    if (future_tile.path_blocker === true) {
+      console.log("Can't go:")
+      console.log(future_character)
+      console.log(future_tile)
+      return true;
+    }
+    return false;
+  }
+
+  const calculate_movement_vector = function (character, movement) {
+
+  }
+
   let keys_pressed = {
     "KeyL": {
       is_pressed: false,
       perform: function () {
+        //if (block_movement_if_going_into_path_blocker(character, { x: character.x + character.speed })) return;
         character.x += character.speed;
         camera.x += character.speed;
       }
@@ -53,6 +73,7 @@
     "KeyJ": {
       is_pressed: false,
       perform: function () {
+        //if (block_movement_if_going_into_path_blocker(character, { x: character.x - character.speed })) return;
         character.x -= character.speed;
       }
     },
@@ -61,8 +82,15 @@
       // Detect player tile
       perform: function () {
         const { tile_x, tile_y } = player_tile();
-        console.log(tile_x)
-        map_tiles[(player_tile_y * (map.tile_width)) + player_tile_x].tile = 'purple'
+        map_tiles[(tile_y * (map.tile_width)) + tile_x].tile = 'purple'
+      }
+    },
+    "KeyC": {
+      is_pressed: false,
+      perform: function () {
+        console.log(character)
+        console.log(map)
+        console.log(tile_data)
       }
     }
   };
@@ -84,25 +112,13 @@
   }
   const build_map = function () {
     loop_canvas(function (x, y) {
-      var tile_index = Math.floor(Math.random() * 10);
-      var tile = null;
-      switch (tile_index) {
-        case 0:
-          tile = "brown"
-          break;
-        case 1:
-          tile = "yellow"
-          break;
-        default:
-          tile = "green"
-          break;
-      }
       map_tiles.push({
         x: x * 50,
         y: y * 50,
         width: 50,
         height: 50,
-        tile: tile
+        tile: "green",
+        path_blocker: ((x == 0) || (y == 0))
       })
     })
   }
@@ -134,14 +150,25 @@
     }
   });
 
+  let mid_tile = map_tiles[
+    (
+      (Math.floor(map.tile_height / 2) * map.tile_width)
+      +
+      Math.floor(map.tile_width / 2)
+    )]
+
+  const fetch_tile_for_xy_coord = function (x, y) {
+    return map_tiles[(y * map.tile_width) + x];
+  }
+
   let character = {
     name: "Naztharune",
     image: "black",
     speed: 5,
-    x: map_tiles[0].x,
-    y: map_tiles[0].y,
-    width: map_tiles[0].width,
-    height: map_tiles[0].height
+    x: 0, //mid_tile.x,
+    y: 0, //mid_tile.y,
+    width: mid_tile.width,
+    height: mid_tile.height
   }
 
   let camera = {
@@ -158,40 +185,42 @@
       (event.y > tile.y) &&
       (event.y < tile.y + tile.height));
   }
-  
+
   const repaint = function () {
     // Draw map
     map_tiles.forEach(function (tile) {
       if ((tile == undefined) || (tile.tile == null)) {
-        ctx.strokeStyle = 'black';
+        ctx.strokeStyle = 'black'
         ctx.strokeRect(tile.x * 50, tile.y * 50, 50, 50);
-      } else {
-        if (tile.x == 0) {
-          pixels_after_tile_x = character.x;
-          ctx.drawImage(debug_image, // source image
-            pixels_after_tile_x, // source-x
-            0, // source-y
-            debug_image.width - pixels_after_tile_x, // source-width
-            debug_image.height, // source-height
-            tile.x, // destination-x
-            tile.y, // destination-y
-            debug_image.width - pixels_after_tile_x, // destination-width
-            50) // destination-height
+      }
+      else {
+        var tile_width = tile.width
+        var tile_height = tile.height
+        var offset_threshold = {
+          x: (canvas.width / 2),
+          y: (canvas.height / 2)
+        }
+        var offset_x = (
+          character.x <= offset_threshold.x
+            ? 0 : character.x - offset_threshold.x
+        )
+        var offset_y = (
+          character.y <= offset_threshold.y
+            ? 0 : character.y - offset_threshold.y
+        )
+        if (tile.path_blocker) {
+          ctx.drawImage(debug_image, tile.x - offset_x, tile.y - offset_y, tile_width, tile_height)
         }
         else {
-          tile_width = tile.width;
-          tile_height = tile.height;
-          ctx.drawImage(image, tile.x - pixels_after_tile_x, tile.y, tile_width, tile_height)
+          ctx.drawImage(image, tile.x - offset_x, tile.y - offset_y, tile_width, tile_height)
         }
-        //ctx.strokeStyle = 'black';
-        //ctx.fillStyle = tile.tile
-        //ctx.fillRect(tile.x, tile.y, tile.width, tile.height);
       }
     })
 
     // Draw character
     ctx.beginPath();
     ctx.fillStyle = character.image;
+    // world position
     ctx.fillRect(character.x, character.y, character.width, character.height);
   }
 
