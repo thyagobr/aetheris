@@ -190,8 +190,9 @@ const detect_surrounding_collisions = function (x, y) {
   // bottom-left
   surrounding_boxes.push(map_tiles[((y + tile_data.tile_height) * map.tile_width) + x])
   // bottom-right
-  surrounding_boxes.push(map_tiles[((y + tile_data.tile_height) * map.tile_width) + (x + tile_data.tile_width + 1)])
-  return surrounding_boxes.some((box) => box && box.path_blocker === true)
+  surrounding_boxes.push(map_tiles[((y + tile_data.tile_height) * map.tile_width) + (x + tile_data.tile_width)])
+  var should_block_movement = surrounding_boxes.some((box) => box && box.path_blocker === true)
+  return should_block_movement;
 }
 
 let character = {
@@ -292,7 +293,9 @@ const player_tile = function () {
   return { tile_x, tile_y };
 }
 
-setInterval(function () {
-  handle_keydown();
-  repaint();
-}, 33);
+window.requestAnimationFrame(game_loop)
+function game_loop() {
+  handle_keydown()
+  repaint()
+  window.requestAnimationFrame(game_loop)
+}
