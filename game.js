@@ -55,6 +55,7 @@
       perform: function () {
         //if (block_movement_if_going_into_path_blocker(character, { x: character.x + character.speed })) return;
         character.x += character.speed;
+        if (!in_middle_of_screen().x) character.local.x += character.speed;
         camera.x += character.speed;
       }
     },
@@ -62,12 +63,16 @@
       is_pressed: false,
       perform: function () {
         character.y -= character.speed;
+        if (!in_middle_of_screen().y) character.local.y -= character.speed;
+        camera.y -= character.speed;
       }
     },
     "KeyK": {
       is_pressed: false,
       perform: function () {
         character.y += character.speed;
+        if (!in_middle_of_screen().y) character.local.y += character.speed;
+        camera.y += character.speed;
       }
     },
     "KeyJ": {
@@ -75,6 +80,8 @@
       perform: function () {
         //if (block_movement_if_going_into_path_blocker(character, { x: character.x - character.speed })) return;
         character.x -= character.speed;
+        if (!in_middle_of_screen().x) character.local.x -= character.speed;
+        camera.x -= character.speed;
       }
     },
     "KeyY": {
@@ -118,7 +125,7 @@
         width: 50,
         height: 50,
         tile: "green",
-        path_blocker: ((x == 0) || (y == 0))
+        path_blocker: ((x == 0) || (y == 0) || (x == map.tile_width - 1) || (y == map.tile_height - 1))
       })
     })
   }
@@ -168,14 +175,22 @@
     x: 0, //mid_tile.x,
     y: 0, //mid_tile.y,
     width: mid_tile.width,
-    height: mid_tile.height
+    height: mid_tile.height,
+    local: { // local is the actual x,y coord on the screen
+      x: 0,
+      y: 0
+    }
   }
 
   let camera = {
     x: character.x,
     y: character.y,
     width: map.tile_width,
-    height: map.tile_height
+    height: map.tile_height,
+    offset_threshold: {
+      x: (canvas.width / 2),
+      y: (canvas.height / 2)
+    }
   }
 
   const is_within_canvas_bounds = function (event, tile) {
@@ -201,12 +216,12 @@
           y: (canvas.height / 2)
         }
         var offset_x = (
-          character.x <= offset_threshold.x
-            ? 0 : character.x - offset_threshold.x
+          camera.x <= offset_threshold.x
+            ? 0 : camera.x - offset_threshold.x
         )
         var offset_y = (
           character.y <= offset_threshold.y
-            ? 0 : character.y - offset_threshold.y
+            ? 0 : camera.y - offset_threshold.y
         )
         if (tile.path_blocker) {
           ctx.drawImage(debug_image, tile.x - offset_x, tile.y - offset_y, tile_width, tile_height)
@@ -221,7 +236,14 @@
     ctx.beginPath();
     ctx.fillStyle = character.image;
     // world position
-    ctx.fillRect(character.x, character.y, character.width, character.height);
+    ctx.fillRect(character.local.x, character.local.y, character.width, character.height);
+  }
+
+  const in_middle_of_screen = function()
+  {
+    var offset_x = (camera.x > camera.offset_threshold.x)
+    var offset_y = (camera.y > camera.offset_threshold.y)
+    return { x: offset_x, y: offset_y }
   }
 
   const player_tile = function () {
