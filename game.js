@@ -15,7 +15,6 @@
   // let pixels_after_tile_x = 0;
   let pixels_after_tile_y = 0;
 
-
   let map_tiles = [];
   let map = {
     tile_width: 2 * tile_data.tiles_x,
@@ -95,9 +94,13 @@
     "KeyC": {
       is_pressed: false,
       perform: function () {
-        console.log(character)
-        console.log(map)
-        console.log(tile_data)
+        // console.log(character)
+        // console.log(map)
+        // console.log(tile_data)
+        console.log("---")
+        console.log("camera.x = " + camera.x)
+        console.log("offset_left_x = " + (camera.offset_threshold.left.x));
+        console.log("offset_right_x = " + (camera.offset_threshold.right.x));
       }
     }
   };
@@ -188,8 +191,14 @@
     width: map.tile_width,
     height: map.tile_height,
     offset_threshold: {
-      x: (canvas.width / 2),
-      y: (canvas.height / 2)
+      left: {
+        x: (canvas.width / 2),
+        y: (canvas.height / 2)
+      },
+      right: {
+        x: (map.tile_width * tile_data.tile_width) - (canvas.width / 2),
+        y: (map.tile_height * tile_data.tile_height) - (canvas.height / 2),
+      }
     }
   }
 
@@ -201,7 +210,10 @@
       (event.y < tile.y + tile.height));
   }
 
+  let offset_x = 0;
+  let offset_y = 0;
   const repaint = function () {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     // Draw map
     map_tiles.forEach(function (tile) {
       if ((tile == undefined) || (tile.tile == null)) {
@@ -211,18 +223,19 @@
       else {
         var tile_width = tile.width
         var tile_height = tile.height
-        var offset_threshold = {
-          x: (canvas.width / 2),
-          y: (canvas.height / 2)
+        // todo: console log the x-point of camera snapping
+        // todo: create condition for freezing offset_* increase
+        if (camera.x <= camera.offset_threshold.left.x) {
+          offset_x = 0
+        } else if (camera.x > camera.offset_threshold.right.x) {
+          // use previous offset_x; do not increment
+        } else {
+          offset_x = camera.x - camera.offset_threshold.left.x
         }
-        var offset_x = (
-          camera.x <= offset_threshold.x
-            ? 0 : camera.x - offset_threshold.x
-        )
-        var offset_y = (
-          character.y <= offset_threshold.y
-            ? 0 : camera.y - offset_threshold.y
-        )
+        if ((camera.y >= camera.offset_threshold.left.y) &&
+          (camera.y < camera.offset_threshold.right.y)) {
+          offset_y = camera.y - camera.offset_threshold.left.y
+        }
         if (tile.path_blocker) {
           ctx.drawImage(debug_image, tile.x - offset_x, tile.y - offset_y, tile_width, tile_height)
         }
@@ -239,10 +252,9 @@
     ctx.fillRect(character.local.x, character.local.y, character.width, character.height);
   }
 
-  const in_middle_of_screen = function()
-  {
-    var offset_x = (camera.x > camera.offset_threshold.x)
-    var offset_y = (camera.y > camera.offset_threshold.y)
+  const in_middle_of_screen = function () {
+    var offset_x = ((camera.x > camera.offset_threshold.left.x) && (camera.x < camera.offset_threshold.right.x))
+    var offset_y = ((camera.y > camera.offset_threshold.left.y) && (camera.y < camera.offset_threshold.right.y))
     return { x: offset_x, y: offset_y }
   }
 
