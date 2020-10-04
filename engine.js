@@ -13,39 +13,20 @@
   current_tile = null;
   tiles = [
     {
-      tile: "green"
+      file: new Image(),
+      src: "grass.jpeg"
     },
     {
-      tile: "brown"
-    },
-    {
-      tile: "blue"
-    },
-    {
-      tile: "white"
-    },
-    {
-      tile: "gray"
+      file: new Image(),
+      src: "checkers_texture.png"
     }
   ]
-  map_tiles = []
+  // Let's prepare the source file here (otherwise it might not load on the loop)
+  tiles.forEach(function (tile) {
+    tile.file.src = tile.src;
+  })
 
-  ctx.beginPath();
-  for (var y = 0; y < Math.floor(canvas.height / 50) - 2; y++) {
-    for (var x = 0; x < 2; x++) {
-      fill = tiles[(y * 2) + x]
-      if (fill != undefined) {
-        ctx.strokeStyle = 'black'
-        ctx.strokeRect(x * 50, 50 + y * 50, 50, 50);
-        ctx.fillStyle = fill.tile
-        ctx.fillRect(x * 50, 50 + y * 50, 50, 50);
-        fill.x = x * 50;
-        fill.y = 50 + y * 50;
-        fill.width = 50;
-        fill.height = 50;
-      }
-    }
-  }
+  var map_tiles = []
 
   buttons = [
     {
@@ -55,7 +36,7 @@
     {
       label: "Save",
       rect: { x: 5, y: canvas.height - 110, width: 100, height: 40 },
-      perform: function() {
+      perform: function () {
         var data = map_tiles.slice();
         filename = "map.json";
 
@@ -87,23 +68,13 @@
     }
   ]
 
-  buttons.forEach(function (button) {
-    ctx.strokeStyle = 'black';
-    ctx.strokeRect(button.rect.x, button.rect.y, button.rect.width, button.rect.height);
-    ctx.font = '24px serif';
-    var text_width = ctx.measureText(button.label).width;
-    var font_size = 24;
-    var placement_x = (button.rect.x + (button.rect.width / 2) - (text_width / 2));
-    var placement_y = (button.rect.y + (button.rect.height / 2) + (font_size/3));
-    ctx.fillText(button.label, placement_x, placement_y);
-  });
-
   ctx.beginPath();
 
   for (var y = 0; y < tiles_y; y++) {
     for (var x = 0; x < tiles_x; x++) {
       map_tiles[(y * tiles_x) + x] = {
-        tile: null,
+        file: null,
+        src: null,
         x: x * 50,
         y: y * 50,
         width: 50,
@@ -113,6 +84,7 @@
       ctx.strokeRect(110 + x * 50, 50 + y * 50, 50, 50);
     }
   }
+  console.log(map_tiles)
 
   window.addEventListener('mousedown', function (event) {
     detect_mouse_click(event);
@@ -132,7 +104,7 @@
       (event.y < tile.y + tile.height));
   }
 
-  const apply_board_offset = function(tile) {
+  const apply_board_offset = function (tile) {
     return {
       width: tile.width,
       height: tile.height,
@@ -147,15 +119,14 @@
       return is_within_canvas_bounds(event, tile);
     })
     if (tile) {
-      current_tile = tile.tile;
+      current_tile = tile;
       // set somewhere which color is chosen
       return;
     }
-    const button_clicked = buttons.find(function(button) {
+    const button_clicked = buttons.find(function (button) {
       return is_within_canvas_bounds(event, button.rect);
     });
-    if (button_clicked)
-    {
+    if (button_clicked) {
       console.log(button_clicked.label)
       button_clicked.perform();
     }
@@ -167,27 +138,71 @@
           return is_within_canvas_bounds(event, apply_board_offset(tile));
         })
         if (tile) {
-          console.log(tile)
-          tile.tile = current_tile;
-          repaint();
+          // If we point to the actual tile, we'll change it
+          // (unless we copy it)
+          // If we copy it, we don't want to overwrite X and Y
+          // For now, let's just pick the file.
+          tile.file = current_tile.file;
         }
       }
     }
   }
 
   const repaint = function () {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Left-side panel
+    ctx.beginPath();
+    for (y = 0; y < Math.floor(canvas.height / 50) - 2; y++) {
+      for (x = 0; x < 2; x++) {
+        fill = tiles[(y * 2) + x]
+        if (fill != undefined) {
+          ctx.drawImage(fill.file, x * 50, 50 + y * 50, 50, 50)
+          ctx.strokeStyle = 'black'
+          ctx.strokeRect(x * 50, 50 + y * 50, 50, 50);
+          fill.x = x * 50;
+          fill.y = 50 + y * 50;
+          fill.width = 50;
+          fill.height = 50;
+        }
+      }
+    }
+
+    // Drawing padd
     map_tiles.forEach(function (tile) {
-      if ((tile == undefined) || (tile.tile == null)) {
+      if ((tile == undefined) || (tile.file == null)) {
         ctx.strokeStyle = 'black';
-        // How did this x work in here? :O
-        ctx.strokeRect(110 + x * 50, 50 + y * 50, 50, 50);
+        ctx.strokeRect(110 + tile.x, 50 + tile.y, tile.width, tile.height);
       } else {
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 2;
-        ctx.strokeRect(110 + x * 50, 50 + y * 50, 50, 50);
-        ctx.fillStyle = tile.tile
-        ctx.fillRect(110 + tile.x, 50 + tile.y, tile.width, tile.height);
+        ctx.strokeRect(110 + tile.x, 50 + tile.y, tile.width, tile.height);
+        if (tile.file) {
+          ctx.drawImage(tile.file, 110 + tile.x, 50 + tile.y, tile.width, tile.height);
+        }
+        else {
+          ctx.fillStyle = tile.tile
+          ctx.fillRect(110 + tile.x, 50 + tile.y, tile.width, tile.height);
+        }
       }
     })
+
+    // Panel buttons 
+    buttons.forEach(function (button) {
+      ctx.strokeStyle = 'black';
+      ctx.strokeRect(button.rect.x, button.rect.y, button.rect.width, button.rect.height);
+      ctx.font = '24px serif';
+      var text_width = ctx.measureText(button.label).width;
+      var font_size = 24;
+      var placement_x = (button.rect.x + (button.rect.width / 2) - (text_width / 2));
+      var placement_y = (button.rect.y + (button.rect.height / 2) + (font_size / 3));
+      ctx.fillText(button.label, placement_x, placement_y);
+    });
+
+  }
+
+  window.requestAnimationFrame(game_loop)
+  function game_loop() {
+    repaint()
+    window.requestAnimationFrame(game_loop)
   }
 })();
